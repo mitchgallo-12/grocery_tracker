@@ -14,7 +14,8 @@
     syncUrl: null,         // Apps Script /exec URL (from localStorage)
     lastPulledAt: null,
     pulling: false,
-    pricingMode: 'unit'    // 'unit' (per-unit) | 'package' (per-package)
+    pricingMode: 'unit',   // 'unit' (per-unit) | 'package' (per-package)
+    expandedItems: {}      // { normalized_name: true } — which item rows are expanded
   };
 
   var LS_URL = 'grocery_tracker_sync_url';
@@ -584,6 +585,80 @@
     }));
   }
 
+  // Build the detail (purchase history) row that appears under an expanded item.
+  // Sorted by date descending. Min/max prices highlighted.
+  function buildPurchaseDetail(item, colspan) {
+    var rows = item.prices.slice().sort(function (a, b) {
+      var da = parseDate(a.date), db = parseDate(b.date);
+      return (db ? db.getTime() : 0) - (da ? da.getTime() : 0);
+    });
+    var minP = item.minPrice, maxP = item.maxPrice;
+
+    var inner = el('table', { class: 'inner-data' }, [
+      el('thead', null, el('tr', null, [
+        el('th', null, 'Date'),
+        el('th', null, 'Store'),
+        el('th', { class: 'num' }, 'Qty'),
+        el('th', { class: 'num' }, 'Unit price'),
+        el('th', { class: 'num' }, 'Line total'),
+        el('th', null, '')
+      ])),
+      el('tbody', null, rows.map(function (p) {
+        var price = Number(p.price) || 0;
+        var isMin = Math.abs(price - minP) < 0.001;
+        var isMax = Math.abs(price - maxP) < 0.001 && minP !== maxP;
+        var marker = isMax
+          ? el('span', { class: 'pill danger' }, 'high')
+          : isMin
+            ? el('span', { class: 'pill brackish' }, 'low')
+            : null;
+        var cls = isMax ? 'price-high' : (isMin ? 'price-low' : '');
+        return el('tr', null, [
+          el('td', null, fmtDate(p.date)),
+          el('td', null, p.store || '—'),
+          el('td', { class: 'num' }, fmtNum(p.qty, 2) + (p.unit ? ' ' + p.unit : '')),
+          el('td', { class: 'num ' + cls }, fmtUSD(price, { maxF: 3 })),
+          el('td', { class: 'num' }, fmtUSD(p.line_total)),
+          el('td', null, marker)
+        ]);
+      }))
+    ]);
+
+    return el('tr', { class: 'expand-detail' }, [
+      el('td', { colspan: String(colspan) }, [
+        el('div', { class: 'detail-wrap' }, [
+          el('div', { class: 'detail-meta' },
+            rows.length + ' purchases · ' + Object.keys(item.stores).join(', ')),
+          inner
+        ])
+      ])
+    ]);
+  }
+
+  // Make a <tr> click-to-expand. Returns an array [mainRow, detailRowOrNull]
+  // so the caller can append both into <tbody>. State persists via state.expandedItems.
+  // `rerender` defaults to renderView, but the items view passes its own
+  // renderTable so its search input doesn't get torn down on each click.
+  function expandableRow(item, colspan, mainCells, rerender) {
+    var key = item.name;
+    var isOpen = !!state.expandedItems[key];
+    var caret = el('span', { class: 'caret' + (isOpen ? ' open' : '') }, '▸');
+    // Inject caret into the first cell
+    if (mainCells.length && mainCells[0].nodeName === 'TD') {
+      mainCells[0].insertBefore(caret, mainCells[0].firstChild);
+    }
+    var main = el('tr', {
+      class: 'expandable' + (isOpen ? ' open' : ''),
+      onClick: function () {
+        if (state.expandedItems[key]) delete state.expandedItems[key];
+        else state.expandedItems[key] = true;
+        (rerender || renderView)();
+      }
+    });
+    mainCells.forEach(function (c) { main.appendChild(c); });
+    return [main, isOpen ? buildPurchaseDetail(item, colspan) : null];
+  }
+
   function renderVolatilityTable(items) {
     var byItem = aggregateByItem(items);
     var rows = Object.keys(byItem).map(function (k) { return byItem[k]; })
@@ -596,29 +671,31 @@
     }
 
     var unitLabel = state.pricingMode === 'unit' ? 'per unit' : 'per package';
-    var table = el('table', { class: 'data' });
-    var thead = el('thead', null, el('tr', null, [
+    var COLS = 6;
+    var table = el('table', { class: 'data expandable-table' });
+    table.appendChild(el('thead', null, el('tr', null, [
       el('th', null, 'Item'),
       el('th', null, 'Stores'),
       el('th', { class: 'num' }, 'Min ' + unitLabel),
       el('th', { class: 'num' }, 'Max ' + unitLabel),
       el('th', { class: 'num' }, 'Range'),
       el('th', { class: 'num' }, 'Volatility')
-    ]));
-    table.appendChild(thead);
+    ])));
     var tbody = el('tbody');
     rows.forEach(function (e) {
-      tbody.appendChild(el('tr', null, [
+      var pair = expandableRow(e, COLS, [
         el('td', null, [
           el('div', null, e.name),
-          el('div', { style: 'font-size:10px;color:var(--warm-stone);letter-spacing:0.06em;text-transform:uppercase;' }, e.category)
+          el('div', { class: 'cell-meta' }, e.category)
         ]),
         el('td', null, Object.keys(e.stores).join(', ')),
         el('td', { class: 'num' }, fmtUSD(e.minPrice, { maxF: 3 })),
         el('td', { class: 'num' }, fmtUSD(e.maxPrice, { maxF: 3 })),
         el('td', { class: 'num' }, fmtUSD(e.priceRange, { maxF: 3 })),
         el('td', { class: 'num' }, fmtPct(e.volatility, 0))
-      ]));
+      ]);
+      tbody.appendChild(pair[0]);
+      if (pair[1]) tbody.appendChild(pair[1]);
     });
     table.appendChild(tbody);
     return table;
@@ -635,7 +712,8 @@
     }
 
     var unitLabel = state.pricingMode === 'unit' ? 'avg per unit' : 'avg per package';
-    var table = el('table', { class: 'data' });
+    var COLS = 5;
+    var table = el('table', { class: 'data expandable-table' });
     table.appendChild(el('thead', null, el('tr', null, [
       el('th', null, 'Item'),
       el('th', { class: 'num' }, 'Times bought'),
@@ -645,21 +723,22 @@
     ])));
     var tbody = el('tbody');
     rows.forEach(function (e) {
-      // Simple trend: compare last price to avg
       var last = e.prices[e.prices.length - 1].price;
       var trendCls = 'delta-flat', trendText = 'flat';
       if (last > e.avgPrice * 1.05) { trendCls = 'delta-up';   trendText = '↑ ' + fmtPct((last - e.avgPrice) / e.avgPrice, 0); }
       else if (last < e.avgPrice * 0.95) { trendCls = 'delta-down'; trendText = '↓ ' + fmtPct((e.avgPrice - last) / e.avgPrice, 0); }
-      tbody.appendChild(el('tr', null, [
+      var pair = expandableRow(e, COLS, [
         el('td', null, [
           el('div', null, e.name),
-          el('div', { style: 'font-size:10px;color:var(--warm-stone);letter-spacing:0.06em;text-transform:uppercase;' }, e.category + ' · ' + e.storeCount + ' stores')
+          el('div', { class: 'cell-meta' }, e.category + ' · ' + e.storeCount + ' store' + (e.storeCount === 1 ? '' : 's'))
         ]),
         el('td', { class: 'num' }, String(e.count)),
         el('td', { class: 'num' }, fmtUSD(e.avgPrice, { maxF: 3 })),
         el('td', { class: 'num' }, fmtUSD(e.totalSpent)),
         el('td', null, el('span', { class: trendCls }, trendText))
-      ]));
+      ]);
+      tbody.appendChild(pair[0]);
+      if (pair[1]) tbody.appendChild(pair[1]);
     });
     table.appendChild(tbody);
     return table;
@@ -927,32 +1006,36 @@
         return;
       }
       var unitLabel = state.pricingMode === 'unit' ? 'per unit' : 'per package';
-      var table = el('table', { class: 'data' }, [
-        el('thead', null, el('tr', null, [
-          el('th', null, 'Item'),
-          el('th', null, 'Category'),
-          el('th', { class: 'num' }, 'Count'),
-          el('th', { class: 'num' }, 'Total spent'),
-          el('th', { class: 'num' }, 'Avg ' + unitLabel),
-          el('th', { class: 'num' }, 'Min'),
-          el('th', { class: 'num' }, 'Max'),
-          el('th', null, 'Stores'),
-          el('th', null, 'Last bought')
-        ])),
-        el('tbody', null, filtered.map(function (e) {
-          return el('tr', null, [
-            el('td', null, e.name),
-            el('td', null, el('span', { class: 'pill' }, e.category)),
-            el('td', { class: 'num' }, String(e.count)),
-            el('td', { class: 'num' }, fmtUSD(e.totalSpent)),
-            el('td', { class: 'num' }, fmtUSD(e.avgPrice, { maxF: 3 })),
-            el('td', { class: 'num' }, fmtUSD(e.minPrice, { maxF: 3 })),
-            el('td', { class: 'num' }, fmtUSD(e.maxPrice, { maxF: 3 })),
-            el('td', null, Object.keys(e.stores).join(', ')),
-            el('td', null, e.lastDate ? fmtDate(e.lastDate) : '—')
-          ]);
-        }))
-      ]);
+      var COLS = 9;
+      var table = el('table', { class: 'data expandable-table' });
+      table.appendChild(el('thead', null, el('tr', null, [
+        el('th', null, 'Item'),
+        el('th', null, 'Category'),
+        el('th', { class: 'num' }, 'Count'),
+        el('th', { class: 'num' }, 'Total spent'),
+        el('th', { class: 'num' }, 'Avg ' + unitLabel),
+        el('th', { class: 'num' }, 'Min'),
+        el('th', { class: 'num' }, 'Max'),
+        el('th', null, 'Stores'),
+        el('th', null, 'Last bought')
+      ])));
+      var tbody = el('tbody');
+      filtered.forEach(function (e) {
+        var pair = expandableRow(e, COLS, [
+          el('td', null, e.name),
+          el('td', null, el('span', { class: 'pill' }, e.category)),
+          el('td', { class: 'num' }, String(e.count)),
+          el('td', { class: 'num' }, fmtUSD(e.totalSpent)),
+          el('td', { class: 'num' }, fmtUSD(e.avgPrice, { maxF: 3 })),
+          el('td', { class: 'num' }, fmtUSD(e.minPrice, { maxF: 3 })),
+          el('td', { class: 'num' }, fmtUSD(e.maxPrice, { maxF: 3 })),
+          el('td', null, Object.keys(e.stores).join(', ')),
+          el('td', null, e.lastDate ? fmtDate(e.lastDate) : '—')
+        ], renderTable);
+        tbody.appendChild(pair[0]);
+        if (pair[1]) tbody.appendChild(pair[1]);
+      });
+      table.appendChild(tbody);
       tableWrap.appendChild(table);
     }
     searchInput.addEventListener('input', renderTable);
