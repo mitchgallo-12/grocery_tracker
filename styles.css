@@ -363,6 +363,89 @@ table.data td.num,
 table.data th.num { text-align: right; font-variant-numeric: tabular-nums; }
 table.data tr:hover td { background: var(--rule-soft); }
 
+.cell-meta {
+  font-size: 10px;
+  color: var(--warm-stone);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+/* ----- Expandable item rows ---------------------------------------------- */
+
+table.expandable-table tr.expandable { cursor: pointer; }
+table.expandable-table tr.expandable:hover td { background: var(--warm-ivory); }
+table.expandable-table tr.expandable.open td {
+  background: var(--warm-ivory);
+  border-bottom-color: var(--cordovan);
+}
+
+.caret {
+  display: inline-block;
+  font-size: 10px;
+  color: var(--warm-stone);
+  margin-right: 8px;
+  transition: transform 0.15s ease, color 0.15s ease;
+  width: 10px;
+}
+tr.expandable.open .caret {
+  transform: rotate(90deg);
+  color: var(--cordovan);
+}
+
+tr.expand-detail > td {
+  padding: 0;
+  background: var(--warm-ivory);
+  border-bottom: 1px solid var(--rule);
+}
+tr.expand-detail:hover td { background: var(--warm-ivory); }
+
+.detail-wrap {
+  padding: 14px 22px 18px 32px;
+  border-left: 3px solid var(--cordovan);
+}
+.detail-meta {
+  font-family: var(--sans);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--warm-stone);
+  margin-bottom: 8px;
+}
+
+table.inner-data {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--parchment);
+  border: 1px solid var(--rule);
+}
+table.inner-data th,
+table.inner-data td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--rule-soft);
+  font-size: 12px;
+  font-weight: 300;
+  vertical-align: middle;
+}
+table.inner-data th {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--warm-stone);
+  background: var(--rule-soft);
+  text-align: left;
+}
+table.inner-data td.num,
+table.inner-data th.num { text-align: right; font-variant-numeric: tabular-nums; }
+table.inner-data tbody tr:last-child td { border-bottom: none; }
+table.inner-data tr:hover td { background: var(--rule-soft); }
+
+table.inner-data td.price-high { color: var(--danger);  font-weight: 500; }
+table.inner-data td.price-low  { color: var(--success); font-weight: 500; }
+
+
 .pill {
   display: inline-block;
   padding: 2px 8px;
