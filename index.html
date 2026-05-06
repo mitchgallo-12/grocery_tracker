@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grocery Tracker — Mitch Gallo</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/css/cormorant-garamond@latest/index.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/fontsource/css/dm-sans@latest/index.css">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="firm">Grocery</div>
+        <div class="sub">Weekly Tracker</div>
+      </div>
+
+      <div class="nav-section">
+        <div class="label">Overview</div>
+        <div class="nav-link" data-view="dashboard"><span class="dot"></span>Dashboard</div>
+        <div class="nav-link" data-view="stores"><span class="dot"></span>Stores</div>
+        <div class="nav-link" data-view="categories"><span class="dot"></span>Categories</div>
+        <div class="nav-link" data-view="items"><span class="dot"></span>Items</div>
+        <div class="nav-link" data-view="receipts"><span class="dot"></span>Receipts</div>
+      </div>
+
+      <div class="nav-section">
+        <div class="label">Settings</div>
+        <div class="nav-link" data-view="sync"><span class="dot"></span>Sync</div>
+      </div>
+
+      <div class="sync-panel">
+        <button id="pull-btn" class="btn-primary" type="button">↓ Pull</button>
+        <div class="sync-meta">
+          <div id="sync-status">Not configured</div>
+          <div id="sync-last">—</div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div class="caption">For personal use only.</div>
+        <div class="caption">Source of truth: Google Sheet.</div>
+      </div>
+    </aside>
+
+    <main class="main" id="main">
+      <div class="loading-shell">
+        <div class="loading-title">Loading…</div>
+        <div class="loading-sub">If this is your first time, configure Sync to point at your Apps Script web-app URL.</div>
+      </div>
+    </main>
+  </div>
+
+  <div id="modal-root"></div>
+  <div id="toast-root"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
