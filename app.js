@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Grocery Tracker — app.js
+   Grocery Tracker â€” app.js
    Vanilla JS dashboard. Pulls from Apps Script web app, renders views,
    POSTs flag/edit ops back. Single-user, read-mostly.
    ========================================================================== */
@@ -15,14 +15,14 @@
     lastPulledAt: null,
     pulling: false,
     pricingMode: 'unit',   // 'unit' (per-unit) | 'package' (per-package)
-    expandedItems: {}      // { normalized_name: true } — which item rows are expanded
+    expandedItems: {}      // { normalized_name: true } â€” which item rows are expanded
   };
 
   var LS_URL = 'grocery_tracker_sync_url';
   var LS_PRICING = 'grocery_tracker_pricing_mode';
   var LS_LAST_PULL = 'grocery_tracker_last_pull';
 
-  // Chart.js instances we create — keep references so we can destroy on re-render
+  // Chart.js instances we create â€” keep references so we can destroy on re-render
   var charts = {};
 
   // ----- DOM helpers --------------------------------------------------------
@@ -67,30 +67,30 @@
 
   // ----- Formatting ---------------------------------------------------------
   function fmtUSD(n, opts) {
-    if (n == null || n === '' || isNaN(Number(n))) return '—';
+    if (n == null || n === '' || isNaN(Number(n))) return 'â€”';
     var num = Number(n);
     var minF = (opts && opts.minF != null) ? opts.minF : 2;
     var maxF = (opts && opts.maxF != null) ? opts.maxF : 2;
     return '$' + num.toLocaleString(undefined, { minimumFractionDigits: minF, maximumFractionDigits: maxF });
   }
   function fmtNum(n, digits) {
-    if (n == null || n === '' || isNaN(Number(n))) return '—';
+    if (n == null || n === '' || isNaN(Number(n))) return 'â€”';
     return Number(n).toLocaleString(undefined, { maximumFractionDigits: digits == null ? 2 : digits });
   }
   function fmtPct(n, digits) {
-    if (n == null || isNaN(Number(n))) return '—';
+    if (n == null || isNaN(Number(n))) return 'â€”';
     return (Number(n) * 100).toFixed(digits == null ? 1 : digits) + '%';
   }
   function fmtDate(d) {
-    if (!d) return '—';
+    if (!d) return 'â€”';
     var dt = (d instanceof Date) ? d : parseDate(d);
     if (!dt) return String(d);
     return dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   }
   function fmtRelative(dStr) {
-    if (!dStr) return '—';
+    if (!dStr) return 'â€”';
     var dt = new Date(dStr);
-    if (isNaN(dt.getTime())) return '—';
+    if (isNaN(dt.getTime())) return 'â€”';
     var diff = (Date.now() - dt.getTime()) / 1000;
     if (diff < 60) return 'just now';
     if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
@@ -107,7 +107,7 @@
     return isNaN(d.getTime()) ? null : d;
   }
 
-  // Sun = 0, Sat = 6 — return the Sunday at the start of the given date's week
+  // Sun = 0, Sat = 6 â€” return the Sunday at the start of the given date's week
   function weekStart(d) {
     var dt = parseDate(d);
     if (!dt) return null;
@@ -117,7 +117,7 @@
   }
   function weekKey(d) {
     var s = weekStart(d);
-    if (!s) return '—';
+    if (!s) return 'â€”';
     var y = s.getFullYear();
     var m = String(s.getMonth() + 1).padStart(2, '0');
     var day = String(s.getDate()).padStart(2, '0');
@@ -134,8 +134,8 @@
       return d.toLocaleDateString(undefined, opts);
     };
     return sameMonth
-      ? fmt(dt) + '–' + end.getDate()
-      : fmt(dt) + '–' + fmt(end);
+      ? fmt(dt) + 'â€“' + end.getDate()
+      : fmt(dt) + 'â€“' + fmt(end);
   }
 
   // ----- Sync / API ---------------------------------------------------------
@@ -193,7 +193,7 @@
       toast('Configure Sync first', 'error');
       return Promise.reject(new Error('no sync url'));
     }
-    // Apps Script doesn't preflight text/plain bodies — keeps CORS simple.
+    // Apps Script doesn't preflight text/plain bodies â€” keeps CORS simple.
     return fetch(state.syncUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -229,7 +229,7 @@
     var input = el('input', { type: 'url', placeholder: 'https://script.google.com/macros/s/AKfy.../exec', value: state.syncUrl || '' });
     var modal = el('div', { class: 'modal' }, [
       el('h2', null, 'Sync settings'),
-      el('div', { class: 'modal-sub' }, 'Paste the Web app URL from your Apps Script deployment. The browser remembers it locally — you only do this once per device.'),
+      el('div', { class: 'modal-sub' }, 'Paste the Web app URL from your Apps Script deployment. The browser remembers it locally â€” you only do this once per device.'),
       el('label', null, 'Apps Script /exec URL'),
       input,
       el('div', { class: 'modal-actions' }, [
@@ -282,7 +282,7 @@
     });
   }
 
-  // Returns price-per-line — based on pricing mode.
+  // Returns price-per-line â€” based on pricing mode.
   // 'unit' = unit_price (price per oz/lb/ea/etc.)
   // 'package' = line_total / qty (price per package as bought)
   function priceFor(li) {
@@ -296,7 +296,7 @@
     }
   }
 
-  // Group line items by Sun-Sat week → { weekKey: { total, count, items[] } }
+  // Group line items by Sun-Sat week â†’ { weekKey: { total, count, items[] } }
   function aggregateByWeek(items) {
     var by = {};
     items.forEach(function (li) {
@@ -309,7 +309,7 @@
     return by;
   }
 
-  // Sorted list of weeks (oldest → newest) covering the data range
+  // Sorted list of weeks (oldest â†’ newest) covering the data range
   function weekRange(items) {
     if (!items.length) return [];
     var dates = items.map(function (i) { return parseDate(i.date); }).filter(Boolean).sort(function (a, b) { return a - b; });
@@ -325,7 +325,7 @@
     return keys;
   }
 
-  // Group by store → { store: { total, trips, items[], topCategories } }
+  // Group by store â†’ { store: { total, trips, items[], topCategories } }
   function aggregateByStore(items, receipts) {
     var by = {};
     items.forEach(function (li) {
@@ -343,7 +343,7 @@
     return by;
   }
 
-  // Group by category → { category: total }
+  // Group by category â†’ { category: total }
   function aggregateByCategory(items) {
     var by = {};
     items.forEach(function (li) {
@@ -353,7 +353,7 @@
     return by;
   }
 
-  // Group by normalized item → { normalized_name: { name, count, totalSpent, prices[], stores{}, lastDate, avgPrice } }
+  // Group by normalized item â†’ { normalized_name: { name, count, totalSpent, prices[], stores{}, lastDate, avgPrice } }
   function aggregateByItem(items) {
     var by = {};
     items.forEach(function (li) {
@@ -378,9 +378,19 @@
     });
     Object.keys(by).forEach(function (k) {
       var e = by[k];
-      e.avgPrice = e.prices.reduce(function (s, p) { return s + p.price; }, 0) / e.prices.length;
-      e.minPrice = e.prices.reduce(function (m, p) { return p.price < m ? p.price : m; }, e.prices[0].price);
-      e.maxPrice = e.prices.reduce(function (m, p) { return p.price > m ? p.price : m; }, e.prices[0].price);
+      // BOGO/promotion lines (recorded as $0 or negative â€” the "free" half of a
+      // buy-one-get-one, or a netted-out "Promotion" row) are real purchases for
+      // spend totals, but they are not real shelf-price observations. Left in,
+      // they drag minPrice down to $0 or negative and inflate volatility with a
+      // swing that never actually happened at the register. Stats below are
+      // computed only from lines with a genuine positive price; every line
+      // (including $0/negative ones) still appears in e.prices for the
+      // per-purchase history table.
+      var priced = e.prices.filter(function (p) { return p.price > 0.001; });
+      if (!priced.length) priced = e.prices;
+      e.avgPrice = priced.reduce(function (s, p) { return s + p.price; }, 0) / priced.length;
+      e.minPrice = priced.reduce(function (m, p) { return p.price < m ? p.price : m; }, priced[0].price);
+      e.maxPrice = priced.reduce(function (m, p) { return p.price > m ? p.price : m; }, priced[0].price);
       e.priceRange = e.maxPrice - e.minPrice;
       e.volatility = e.avgPrice > 0 ? e.priceRange / e.avgPrice : 0;
       e.storeCount = Object.keys(e.stores).length;
@@ -395,9 +405,9 @@
     var btn = $('#pull-btn');
     if (!state.syncUrl) {
       status.textContent = 'Not configured';
-      last.textContent = 'Click sync settings →';
+      last.textContent = 'Click sync settings â†’';
     } else if (state.pulling) {
-      status.textContent = 'Pulling…';
+      status.textContent = 'Pullingâ€¦';
       last.textContent = '';
     } else {
       status.textContent = 'Connected';
@@ -469,15 +479,15 @@
         el('div', null, [
           el('div', { class: 'view-eyebrow' }, 'Overview'),
           el('div', { class: 'view-title' }, 'Dashboard'),
-          el('div', { class: 'view-sub' }, 'Weekly grocery spend across ' + Object.keys(aggregateByStore(items, receipts)).length + ' stores. Sun–Sat weeks. Toggle pricing to compare per-unit vs. per-package.')
+          el('div', { class: 'view-sub' }, 'Weekly grocery spend across ' + Object.keys(aggregateByStore(items, receipts)).length + ' stores. Sunâ€“Sat weeks. Toggle pricing to compare per-unit vs. per-package.')
         ]),
         el('div', { class: 'view-controls' }, pricingToggle())
       ]),
 
       // KPI strip
       el('div', { class: 'kpi-row' }, [
-        kpi('This week', fmtUSD(thisTotal), thisWeek === '—' ? '' : weekLabel(thisWeek)),
-        kpi('vs. last week', delta == null ? '—' : (delta >= 0 ? '+' : '') + (delta * 100).toFixed(0) + '%',
+        kpi('This week', fmtUSD(thisTotal), thisWeek === 'â€”' ? '' : weekLabel(thisWeek)),
+        kpi('vs. last week', delta == null ? 'â€”' : (delta >= 0 ? '+' : '') + (delta * 100).toFixed(0) + '%',
             'last week ' + fmtUSD(lastTotal), delta == null ? null : (delta >= 0 ? 'up' : 'down')),
         kpi('Avg per week', fmtUSD(avgPerWeek), weekKeys.length + ' weeks tracked'),
         kpi('Items tracked', String(items.length), receipts.length + ' receipts')
@@ -487,7 +497,7 @@
       el('div', { class: 'card' }, [
         el('div', { class: 'card-header' }, [
           el('div', { class: 'card-title' }, 'Weekly spend'),
-          el('div', { class: 'card-sub' }, 'Sun–Sat')
+          el('div', { class: 'card-sub' }, 'Sunâ€“Sat')
         ]),
         el('div', { class: 'chart-wrap tall', id: 'trend-wrap' })
       ]),
@@ -580,7 +590,7 @@
           el('div', { style: 'position:absolute;left:0;top:0;height:100%;width:' + pct + '%;background:var(--cordovan);' })
         ]),
         el('div', { style: 'font-size:11px;color:var(--warm-stone);margin-top:4px;letter-spacing:0.04em;' },
-          (s.trips || 0) + ' trips · ' + s.items.length + ' items')
+          (s.trips || 0) + ' trips Â· ' + s.items.length + ' items')
       ]);
     }));
   }
@@ -615,7 +625,7 @@
         var cls = isMax ? 'price-high' : (isMin ? 'price-low' : '');
         return el('tr', null, [
           el('td', null, fmtDate(p.date)),
-          el('td', null, p.store || '—'),
+          el('td', null, p.store || 'â€”'),
           el('td', { class: 'num' }, fmtNum(p.qty, 2) + (p.unit ? ' ' + p.unit : '')),
           el('td', { class: 'num ' + cls }, fmtUSD(price, { maxF: 3 })),
           el('td', { class: 'num' }, fmtUSD(p.line_total)),
@@ -628,7 +638,7 @@
       el('td', { colspan: String(colspan) }, [
         el('div', { class: 'detail-wrap' }, [
           el('div', { class: 'detail-meta' },
-            rows.length + ' purchases · ' + Object.keys(item.stores).join(', ')),
+            rows.length + ' purchases Â· ' + Object.keys(item.stores).join(', ')),
           inner
         ])
       ])
@@ -642,7 +652,7 @@
   function expandableRow(item, colspan, mainCells, rerender) {
     var key = item.name;
     var isOpen = !!state.expandedItems[key];
-    var caret = el('span', { class: 'caret' + (isOpen ? ' open' : '') }, '▸');
+    var caret = el('span', { class: 'caret' + (isOpen ? ' open' : '') }, 'â–¸');
     // Inject caret into the first cell
     if (mainCells.length && mainCells[0].nodeName === 'TD') {
       mainCells[0].insertBefore(caret, mainCells[0].firstChild);
@@ -667,7 +677,7 @@
       .slice(0, 12);
 
     if (!rows.length) {
-      return el('div', { class: 'empty-body' }, 'No cross-store items yet — buy the same item at two different stores to see volatility data.');
+      return el('div', { class: 'empty-body' }, 'No cross-store items yet â€” buy the same item at two different stores to see volatility data.');
     }
 
     var unitLabel = state.pricingMode === 'unit' ? 'per unit' : 'per package';
@@ -725,12 +735,12 @@
     rows.forEach(function (e) {
       var last = e.prices[e.prices.length - 1].price;
       var trendCls = 'delta-flat', trendText = 'flat';
-      if (last > e.avgPrice * 1.05) { trendCls = 'delta-up';   trendText = '↑ ' + fmtPct((last - e.avgPrice) / e.avgPrice, 0); }
-      else if (last < e.avgPrice * 0.95) { trendCls = 'delta-down'; trendText = '↓ ' + fmtPct((e.avgPrice - last) / e.avgPrice, 0); }
+      if (last > e.avgPrice * 1.05) { trendCls = 'delta-up';   trendText = 'â†‘ ' + fmtPct((last - e.avgPrice) / e.avgPrice, 0); }
+      else if (last < e.avgPrice * 0.95) { trendCls = 'delta-down'; trendText = 'â†“ ' + fmtPct((e.avgPrice - last) / e.avgPrice, 0); }
       var pair = expandableRow(e, COLS, [
         el('td', null, [
           el('div', null, e.name),
-          el('div', { class: 'cell-meta' }, e.category + ' · ' + e.storeCount + ' store' + (e.storeCount === 1 ? '' : 's'))
+          el('div', { class: 'cell-meta' }, e.category + ' Â· ' + e.storeCount + ' store' + (e.storeCount === 1 ? '' : 's'))
         ]),
         el('td', { class: 'num' }, String(e.count)),
         el('td', { class: 'num' }, fmtUSD(e.avgPrice, { maxF: 3 })),
@@ -853,7 +863,7 @@
         el('div', null, [
           el('div', { class: 'view-eyebrow' }, 'Overview'),
           el('div', { class: 'view-title' }, 'Stores'),
-          el('div', { class: 'view-sub' }, 'Per-store deep dive — what you buy where, and how often.')
+          el('div', { class: 'view-sub' }, 'Per-store deep dive â€” what you buy where, and how often.')
         ])
       ])
     ]);
@@ -885,7 +895,7 @@
         el('div', { class: 'card-header' }, [
           el('div', null, [
             el('div', { class: 'card-title' }, s.store),
-            el('div', { class: 'card-sub' }, fmtUSD(s.total) + ' across ' + (s.trips || 0) + ' trips · ' + s.items.length + ' items')
+            el('div', { class: 'card-sub' }, fmtUSD(s.total) + ' across ' + (s.trips || 0) + ' trips Â· ' + s.items.length + ' items')
           ])
         ]),
         el('div', { class: 'grid-2' }, [
@@ -938,7 +948,7 @@
         el('div', null, [
           el('div', { class: 'view-eyebrow' }, 'Overview'),
           el('div', { class: 'view-title' }, 'Categories'),
-          el('div', { class: 'view-sub' }, 'Spending by category. Categories are learned from your receipts and stored in the Sheet — edit there to retag.')
+          el('div', { class: 'view-sub' }, 'Spending by category. Categories are learned from your receipts and stored in the Sheet â€” edit there to retag.')
         ])
       ])
     ]);
@@ -965,7 +975,7 @@
         el('div', { class: 'card-header' }, [
           el('div', null, [
             el('div', { class: 'card-title' }, c.name),
-            el('div', { class: 'card-sub' }, fmtUSD(c.total) + ' · ' + c.count + ' line items')
+            el('div', { class: 'card-sub' }, fmtUSD(c.total) + ' Â· ' + c.count + ' line items')
           ])
         ]),
         el('table', { class: 'data' }, [
@@ -992,7 +1002,7 @@
     var allRows = Object.keys(byItem).map(function (k) { return byItem[k]; })
       .sort(function (a, b) { return b.totalSpent - a.totalSpent; });
 
-    var searchInput = el('input', { type: 'text', placeholder: 'Search items…', style: 'width:240px;' });
+    var searchInput = el('input', { type: 'text', placeholder: 'Search itemsâ€¦', style: 'width:240px;' });
     var tableWrap = el('div');
 
     function renderTable() {
@@ -1030,7 +1040,7 @@
           el('td', { class: 'num' }, fmtUSD(e.minPrice, { maxF: 3 })),
           el('td', { class: 'num' }, fmtUSD(e.maxPrice, { maxF: 3 })),
           el('td', null, Object.keys(e.stores).join(', ')),
-          el('td', null, e.lastDate ? fmtDate(e.lastDate) : '—')
+          el('td', null, e.lastDate ? fmtDate(e.lastDate) : 'â€”')
         ], renderTable);
         tbody.appendChild(pair[0]);
         if (pair[1]) tbody.appendChild(pair[1]);
@@ -1076,7 +1086,7 @@
         el('div', null, [
           el('div', { class: 'view-eyebrow' }, 'Detail'),
           el('div', { class: 'view-title' }, 'Receipts'),
-          el('div', { class: 'view-sub' }, 'Most recent first. Click flag on any line to mark for review — it writes back to the FlaggedRows tab in your Sheet.')
+          el('div', { class: 'view-sub' }, 'Most recent first. Click flag on any line to mark for review â€” it writes back to the FlaggedRows tab in your Sheet.')
         ])
       ])
     ]);
@@ -1093,7 +1103,7 @@
         el('div', { class: 'receipt-head' }, [
           el('div', null, [
             el('div', { class: 'receipt-store' }, r.store || 'Unknown store'),
-            el('div', { class: 'receipt-date' }, fmtDate(r.date) + (r.notes ? ' · ' + r.notes : ''))
+            el('div', { class: 'receipt-date' }, fmtDate(r.date) + (r.notes ? ' Â· ' + r.notes : ''))
           ]),
           el('div', { class: 'receipt-total' }, fmtUSD(r.total))
         ]),
@@ -1159,7 +1169,7 @@
     if (state.syncUrl) {
       pull();
     } else {
-      // First run — encourage sync setup
+      // First run â€” encourage sync setup
       renderView();
     }
   }
